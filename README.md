@@ -40,14 +40,12 @@ wgy666/
 │   ├── scripts/          # 质量评估与并发测试脚本
 │   └── evaluation/       # 问答评估样例
 ├── frontend/             # 当前 React 前端
-├── UIprototype/          # 界面原型迭代成果
-├── TechPrototype/        # 技术原型迭代成果与归档代码
 ├── docs/                 # 架构、接口、部署和质量文档
 ├── scripts/              # 环境与端到端测试脚本
 └── docker-compose.yml    # PostgreSQL/pgvector 开发环境
 ```
 
-日常开发和启动使用根目录的 `backend/` 与 `frontend/`。`TechPrototype/code/` 用于保存技术原型迭代归档。
+日常开发和启动使用根目录的 `backend/` 与 `frontend/`。课程答辩、迭代原型、提交快照和个人过程记录保存在 `course-material` 分支，避免混入主线代码。
 
 ## 环境要求
 

@@ -1,2 +1,0 @@
-lines   cov%   module   (path)
-  135    99%   app.services.issue_classifier   (/home/yangjunqi/wgy666/backend/app/services/issue_classifier.py)
