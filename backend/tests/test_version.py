@@ -36,4 +36,4 @@ def test_release_metadata_preserves_commit_identifier(monkeypatch, tmp_path):
     )
     monkeypatch.setattr(version, "BUILD_INFO_FILE", build_info_file)
 
-    assert version.get_version_info()["commit"] == "not-the-commit"
+    assert version.get_version_info()["commit"] == "deadbeef"
