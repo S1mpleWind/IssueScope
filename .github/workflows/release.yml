@@ -1,0 +1,105 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: release
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repository history
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Verify tag format and main ancestry
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+          RELEASE_COMMIT: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Release tags must use vX.Y.Z format: $RELEASE_TAG" >&2
+            exit 1
+          fi
+          git fetch origin main:refs/remotes/origin/main --no-tags
+          if ! git merge-base --is-ancestor "$RELEASE_COMMIT" refs/remotes/origin/main; then
+            echo "Refusing to release: $RELEASE_TAG does not point to main history" >&2
+            exit 1
+          fi
+
+      - name: Set up Python and uv
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          python-version: "3.12.10"
+          version: "0.13.4"
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: uv sync --locked --group dev
+
+      - name: Run backend tests
+        working-directory: backend
+        run: uv run --locked pytest
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "24.22.0"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Lint frontend
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Test frontend
+        working-directory: frontend
+        run: npm test
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+
+      - name: Create release bundle and build metadata
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+          BUILD_NUMBER: ${{ github.run_number }}
+          RELEASE_COMMIT: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          printf '{\n  "version": "%s",\n  "build": "%s",\n  "commit": "%s"\n}\n' \
+            "$RELEASE_TAG" "$BUILD_NUMBER" "$RELEASE_COMMIT" > BUILD_INFO.json
+          mkdir -p release-staging dist
+          git archive --format=tar "$RELEASE_COMMIT" | tar -xf - -C release-staging
+          cp -R frontend/dist release-staging/frontend/dist
+          cp BUILD_INFO.json release-staging/BUILD_INFO.json
+          archive="dist/IssueScope-${RELEASE_TAG}.tar.gz"
+          tar -czf "$archive" -C release-staging .
+          sha256sum "$archive" > "$archive.sha256"
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          gh release create "$RELEASE_TAG" \
+            "dist/IssueScope-${RELEASE_TAG}.tar.gz" \
+            "dist/IssueScope-${RELEASE_TAG}.tar.gz.sha256" \
+            --title "$RELEASE_TAG" \
+            --generate-notes

@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.assistant.router import router as assistant_router
-from app.api.routes import health, issues, repositories, repository_tools, users
+from app.api.routes import health, issues, repositories, repository_tools, users, version
 from app.core.config import settings
 from app.core.security import AuthMiddleware
 from app.api.routes.faq import router as faq_router
@@ -49,6 +49,7 @@ def create_app() -> FastAPI:
     app.add_middleware(AuthMiddleware)
 
     app.include_router(health.router, prefix="/api")
+    app.include_router(version.router, prefix="/api")
     app.include_router(repositories.router, prefix="/api")
     app.include_router(repository_tools.router, prefix="/api")
     app.include_router(issues.router, prefix="/api")
