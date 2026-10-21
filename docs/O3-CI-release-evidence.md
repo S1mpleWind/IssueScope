@@ -57,4 +57,4 @@ GitHub 证据也已通过 `gh pr comment` 记入 [PR #51 评论](https://github.
 
 第二个 Release 尚未创建：需先审批并合并 PR #54，之后用修正后的流水线发布 `v0.1.1`，再次下载资产并验证校验和与版本追踪。PR #53 也仍待审批，虽第二轮红绿 CI 已完整演示。
 
-PR #53 和 #54 的详细证据分别记录在 [PR #53 评论](https://github.com/S1mpleWind/IssueScope/pull/53#issuecomment-6311850000) 与 [PR #54 评论](https://github.com/S1mpleWind/IssueScope/pull/54#issuecomment-6311850001)。
+PR #53 和 #54 的详细证据分别记录在 [PR #53 评论](https://github.com/S1mpleWind/IssueScope/pull/53#issuecomment-6313620265) 与 [PR #54 评论](https://github.com/S1mpleWind/IssueScope/pull/54#issuecomment-6313620702)。
