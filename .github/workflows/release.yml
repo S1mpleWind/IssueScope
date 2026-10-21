@@ -90,7 +90,8 @@ jobs:
           cp BUILD_INFO.json release-staging/BUILD_INFO.json
           archive="dist/IssueScope-${RELEASE_TAG}.tar.gz"
           tar -czf "$archive" -C release-staging .
-          sha256sum "$archive" > "$archive.sha256"
+          archive_name="IssueScope-${RELEASE_TAG}.tar.gz"
+          (cd dist && sha256sum "$archive_name" > "$archive_name.sha256")
 
       - name: Publish GitHub Release
         env:
