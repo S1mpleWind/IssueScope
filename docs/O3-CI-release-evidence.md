@@ -1,60 +1,46 @@
 # O3：CI 门禁与可追踪发布证据
 
 更新日期：2026-10-21  
-项目：IssueScope（GitHub: [S1mpleWind/IssueScope](https://github.com/S1mpleWind/IssueScope)）
+项目：[IssueScope](https://github.com/S1mpleWind/IssueScope)
 
-## 目标
+## 目标与实施
 
-用自动化检查保护 `main`，让变更通过 PR 和 CI 后再进入主分支；发布包提供版本、构建号、源码 commit 与校验和，便于从运行产物追溯源码。
+用自动化检查保护 `main`，让变更经 PR、审批和 CI 后合入；每个发布包包含前端构建产物及 `BUILD_INFO.json`，并提供 SHA-256 校验和。后端 `GET /api/version` 返回版本、Actions 构建号和源码 commit；`scripts/trace.sh` 可从归档中读取这些信息。
 
-## GitHub 分支规则
+GitHub ruleset `main-branch`（ID `25532883`）处于 active，目标是默认分支，要求 PR、至少 1 个 approval 和 `ci` 检查，并禁止删除分支及 non-fast-forward 更新。规则可见 [GitHub ruleset](https://github.com/S1mpleWind/IssueScope/settings/rules/25532883)。PR #51、#52、#53、#54 均经过审批并合入 `main`。
 
-已通过 `gh api` 检查仓库 ruleset `main-branch`（ID `25532883`）：规则处于 active，目标是默认分支。要求 PR、至少 1 个 approval 和 `ci` 状态检查；禁止删除分支与 non-fast-forward 更新。规则详情可在 [GitHub ruleset](https://github.com/S1mpleWind/IssueScope/settings/rules/25532883) 查看。
+发布 workflow `.github/workflows/release.yml` 仅响应 `vX.Y.Z` tag；发布前验证 tag commit 属于 `main` 历史，再跑后端与前端检查并生成归档、元数据和校验和。
 
 ## CI 门禁演练
 
-PR [#51](https://github.com/S1mpleWind/IssueScope/pull/51) 演示了红灯到绿灯流程：
+- PR [#51](https://github.com/S1mpleWind/IssueScope/pull/51)：故意错误的前端期望值使 [run 39570727566](https://github.com/S1mpleWind/IssueScope/actions/runs/39570727566) 失败；修正后 [run 39570870332](https://github.com/S1mpleWind/IssueScope/actions/runs/39570870332) 通过。后端测试先通过，失败发生在前端测试。
+- PR [#53](https://github.com/S1mpleWind/IssueScope/pull/53)：故意错误的后端断言使 [run 39572929615](https://github.com/S1mpleWind/IssueScope/actions/runs/39572929615) 在后端测试阶段失败；修正后 [run 39573041544](https://github.com/S1mpleWind/IssueScope/actions/runs/39573041544) 全部通过。
+- 直接推送验证：空提交尝试更新 `main` 被 GitHub 以 `GH013` 拒绝，提示变更必须通过 PR；提交未进入 `main`。
 
-1. 提交一个故意写错期望值的前端测试。Actions run [39570727566](https://github.com/S1mpleWind/IssueScope/actions/runs/39570727566) 按预期失败；日志显示后端依赖安装与后端测试先通过，前端测试失败。
-2. 将期望值改成 UI 实际使用的“源码”。Actions run [39570870332](https://github.com/S1mpleWind/IssueScope/actions/runs/39570870332) 的 `ci` 成功。
-3. PR #51 目前仍等待一位 reviewer 审批，未合并。
+本地验证：后端 177 passed、5 skipped；前端 lint、7 个测试和生产构建通过。Release 包解压后通过 FastAPI TestClient 请求 `/api/version`，得到 HTTP 200 和匹配该包的版本信息。
 
-## 发布追踪实现
+## Release 证据
 
-PR [#52](https://github.com/S1mpleWind/IssueScope/pull/52) 加入以下内容：
+### `v0.1.0`
 
-- `GET /api/version`：返回 `version`、`build`、`commit`。开发环境缺少元数据时返回 `0.1.0`、`dev`、`unknown`。
-- `.github/workflows/release.yml`：收到 `vX.Y.Z` tag 后先校验格式，并确认 tag commit 属于 `main` 历史；然后运行后端和前端检查、构建前端、生成含 `BUILD_INFO.json` 的 tar.gz 与 SHA-256 文件，并发布 GitHub Release。
-- `scripts/trace.sh`：从 release tarball 读取并输出版本、构建号与源码 commit。
+- [GitHub Release](https://github.com/S1mpleWind/IssueScope/releases/tag/v0.1.0)，[tag](https://github.com/S1mpleWind/IssueScope/tree/v0.1.0)。
+- Release Actions [run 39573212997](https://github.com/S1mpleWind/IssueScope/actions/runs/39573212997) 成功。
+- 元数据：版本 `v0.1.0`，构建号 `1`，commit `79064d64571f0b9e486eeff7f554b481b6faa17c`。
+- 归档 SHA-256：`bb4325ed218d64c59709f0eb2580b305518a3faf6c2f0a04e3daab2bb13af475`。
+- 下载后 `sha256sum -c` 通过；`scripts/trace.sh` 和 `/api/version` 均读出相同元数据。
 
-PR #52 的 GitHub Actions run [39571353021](https://github.com/S1mpleWind/IssueScope/actions/runs/39571353021) 已成功，包含后端依赖安装和测试、前端依赖安装、lint、测试、生产构建。
+### `v0.1.1`
 
-本地验证结果：
+- [GitHub Release](https://github.com/S1mpleWind/IssueScope/releases/tag/v0.1.1)，[tag](https://github.com/S1mpleWind/IssueScope/tree/v0.1.1)。
+- Release Actions [run 39584554209](https://github.com/S1mpleWind/IssueScope/actions/runs/39584554209) 成功。
+- 元数据：版本 `v0.1.1`，构建号 `2`，commit `6adbe7d61d3185137506382afdf62ce30fa1985b`。
+- 归档 SHA-256：`611acd2465374f0e6aef598af961fe154e924485f1abd98ba4c0c0e081aba4f5`。
+- 下载后 `sha256sum -c` 通过；`scripts/trace.sh` 和 `/api/version` 均读出相同元数据。
 
-- 后端：177 passed，5 skipped。
-- 前端：lint 通过，7 个测试通过，生产构建通过。
-- 归档演练：从样例 tar.gz 成功读取版本、构建号、commit。
+### 实验中修复的问题
 
-## 当前状态与后续
+初版 `v0.1.0` checksum 记录了 CI 内部的 `dist/` 路径，下载后无法直接校验。修复 PR [#54](https://github.com/S1mpleWind/IssueScope/pull/54) 改为只记录归档文件名，其 CI [run 39573473967](https://github.com/S1mpleWind/IssueScope/actions/runs/39573473967) 通过并已合入。`v0.1.0` 的 checksum 资产也已重新上传并验证；`v0.1.1` 使用修正后的工作流生成，下载校验直接通过。
 
-PR #51 和 #52 均为 open，CI 均通过，但 GitHub 规则要求的 approval 尚未满足，所以尚未合并。没有创建 tag 或 GitHub Release。待 PR #52 经审批合并到 `main` 后，再对主分支提交创建 `vX.Y.Z` tag，release workflow 才会生成正式发布包与校验和。PR #51 可单独审查并决定是否合并其新增测试。
+## GitHub 记录
 
-GitHub 证据也已通过 `gh pr comment` 记入 [PR #51 评论](https://github.com/S1mpleWind/IssueScope/pull/51#issuecomment-6311846624) 和 [PR #52 评论](https://github.com/S1mpleWind/IssueScope/pull/52#issuecomment-6311847332)。
-
-## 第二轮门禁与正式发布实验
-
-第二轮演练记录在 PR [#53](https://github.com/S1mpleWind/IssueScope/pull/53)：故意错误的后端断言使 Actions run [39572929615](https://github.com/S1mpleWind/IssueScope/actions/runs/39572929615) 在后端测试阶段失败；修正后 run [39573041544](https://github.com/S1mpleWind/IssueScope/actions/runs/39573041544) 全部通过。PR #53 目前 CI 通过，等待一位 reviewer 审批。
-
-直接推送验证使用一次空提交尝试更新 `main`。GitHub 返回 `GH013`，明确拒绝并提示 “Changes must be made through a pull request”；该提交没有进入 `main`。此证据也记在 PR #53 评论中。
-
-### Release `v0.1.0`
-
-- Tag：[`v0.1.0`](https://github.com/S1mpleWind/IssueScope/tree/v0.1.0)，指向 `79064d64571f0b9e486eeff7f554b481b6faa17c`。
-- Release workflow：[run 39573212997](https://github.com/S1mpleWind/IssueScope/actions/runs/39573212997) 成功完成 tag 格式与 main ancestry 校验、后端和前端检查、打包及发布。
-- GitHub Release：[v0.1.0](https://github.com/S1mpleWind/IssueScope/releases/tag/v0.1.0)。构建号 `1`；包内 `BUILD_INFO.json` 与 `/api/version` 都返回 `v0.1.0`、`1`、上述 commit SHA。
-- 下载后运行 `scripts/trace.sh` 可读出版本信息；从解包目录通过 FastAPI TestClient 请求 `/api/version` 得到 HTTP 200 和相同元数据。
-- 实验发现初版 checksum 文件包含 runner 路径 `dist/`，下载后直接校验失败。`v0.1.0` 的 checksum 资产已替换并通过 `sha256sum -c` 验证。工作流修正在 PR [#54](https://github.com/S1mpleWind/IssueScope/pull/54)，其 CI [run 39573473967](https://github.com/S1mpleWind/IssueScope/actions/runs/39573473967) 已通过；PR 等待审批。后续版本应使用修正后的工作流。
-
-第二个 Release 尚未创建：需先审批并合并 PR #54，之后用修正后的流水线发布 `v0.1.1`，再次下载资产并验证校验和与版本追踪。PR #53 也仍待审批，虽第二轮红绿 CI 已完整演示。
-
-PR #53 和 #54 的详细证据分别记录在 [PR #53 评论](https://github.com/S1mpleWind/IssueScope/pull/53#issuecomment-6313620265) 与 [PR #54 评论](https://github.com/S1mpleWind/IssueScope/pull/54#issuecomment-6313620702)。
+演练和变更证据已通过 `gh pr comment` 记入：[#51 评论](https://github.com/S1mpleWind/IssueScope/pull/51#issuecomment-6311846624)、[#52 评论](https://github.com/S1mpleWind/IssueScope/pull/52#issuecomment-6311847332)、[#53 评论](https://github.com/S1mpleWind/IssueScope/pull/53#issuecomment-6313620265)、[#54 评论](https://github.com/S1mpleWind/IssueScope/pull/54#issuecomment-6313620702)。
