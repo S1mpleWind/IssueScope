@@ -40,3 +40,21 @@ PR #52 的 GitHub Actions run [39571353021](https://github.com/S1mpleWind/IssueS
 PR #51 和 #52 均为 open，CI 均通过，但 GitHub 规则要求的 approval 尚未满足，所以尚未合并。没有创建 tag 或 GitHub Release。待 PR #52 经审批合并到 `main` 后，再对主分支提交创建 `vX.Y.Z` tag，release workflow 才会生成正式发布包与校验和。PR #51 可单独审查并决定是否合并其新增测试。
 
 GitHub 证据也已通过 `gh pr comment` 记入 [PR #51 评论](https://github.com/S1mpleWind/IssueScope/pull/51#issuecomment-6311846624) 和 [PR #52 评论](https://github.com/S1mpleWind/IssueScope/pull/52#issuecomment-6311847332)。
+
+## 第二轮门禁与正式发布实验
+
+第二轮演练记录在 PR [#53](https://github.com/S1mpleWind/IssueScope/pull/53)：故意错误的后端断言使 Actions run [39572929615](https://github.com/S1mpleWind/IssueScope/actions/runs/39572929615) 在后端测试阶段失败；修正后 run [39573041544](https://github.com/S1mpleWind/IssueScope/actions/runs/39573041544) 全部通过。PR #53 目前 CI 通过，等待一位 reviewer 审批。
+
+直接推送验证使用一次空提交尝试更新 `main`。GitHub 返回 `GH013`，明确拒绝并提示 “Changes must be made through a pull request”；该提交没有进入 `main`。此证据也记在 PR #53 评论中。
+
+### Release `v0.1.0`
+
+- Tag：[`v0.1.0`](https://github.com/S1mpleWind/IssueScope/tree/v0.1.0)，指向 `79064d64571f0b9e486eeff7f554b481b6faa17c`。
+- Release workflow：[run 39573212997](https://github.com/S1mpleWind/IssueScope/actions/runs/39573212997) 成功完成 tag 格式与 main ancestry 校验、后端和前端检查、打包及发布。
+- GitHub Release：[v0.1.0](https://github.com/S1mpleWind/IssueScope/releases/tag/v0.1.0)。构建号 `1`；包内 `BUILD_INFO.json` 与 `/api/version` 都返回 `v0.1.0`、`1`、上述 commit SHA。
+- 下载后运行 `scripts/trace.sh` 可读出版本信息；从解包目录通过 FastAPI TestClient 请求 `/api/version` 得到 HTTP 200 和相同元数据。
+- 实验发现初版 checksum 文件包含 runner 路径 `dist/`，下载后直接校验失败。`v0.1.0` 的 checksum 资产已替换并通过 `sha256sum -c` 验证。工作流修正在 PR [#54](https://github.com/S1mpleWind/IssueScope/pull/54)，其 CI [run 39573473967](https://github.com/S1mpleWind/IssueScope/actions/runs/39573473967) 已通过；PR 等待审批。后续版本应使用修正后的工作流。
+
+第二个 Release 尚未创建：需先审批并合并 PR #54，之后用修正后的流水线发布 `v0.1.1`，再次下载资产并验证校验和与版本追踪。PR #53 也仍待审批，虽第二轮红绿 CI 已完整演示。
+
+PR #53 和 #54 的详细证据分别记录在 [PR #53 评论](https://github.com/S1mpleWind/IssueScope/pull/53#issuecomment-6311850000) 与 [PR #54 评论](https://github.com/S1mpleWind/IssueScope/pull/54#issuecomment-6311850001)。
