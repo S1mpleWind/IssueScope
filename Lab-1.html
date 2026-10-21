@@ -1,0 +1,817 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="generator" content="build_guide_html.py">
+<title>实验 1：从提交到可追溯制品的流水线</title>
+<meta name="description" content="互联网产品开发与运维（2026 秋季） · 实验 1：从提交到可追溯制品的流水线">
+<style>
+:root{
+  --ground:#F4F6F8; --surface:#FFFFFF; --surface-2:#EDF1F5; --code-bg:#F0F3F7;
+  --ink:#1B2530; --ink-2:#4A5866; --muted:#6B7885; --rule:#D8DEE5; --rule-strong:#B9C3CE;
+  --accent:#2251C9; --accent-ink:#1B41A3; --accent-soft:#E8EEFB;
+  --amber:#B8681A; --amber-soft:#FBF1E4;
+  --red:#C23B32; --red-soft:#FBE9E7;
+  --green:#2E8B57; --green-soft:#E6F3EC; --on-accent:#fff; --on-green:#fff;
+  --serif:"Noto Serif SC","Songti SC","STSong","SimSun",serif;
+  --sans:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC","Segoe UI",Helvetica,Arial,sans-serif;
+  --mono:"JetBrains Mono","SFMono-Regular",Menlo,Consolas,"Liberation Mono","Noto Sans Mono CJK SC",monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --ground:#0E1319; --surface:#151B23; --surface-2:#1B222C; --code-bg:#10161D;
+    --ink:#E7ECF1; --ink-2:#B4BFCA; --muted:#8C98A4; --rule:#2B3541; --rule-strong:#3D4956;
+    --accent:#7FA3FF; --accent-ink:#A9C1FF; --accent-soft:#1B2740;
+    --amber:#E5A35A; --amber-soft:#2E2416;
+    --red:#F07A70; --red-soft:#3A1F1D;
+    --green:#5CC28A; --green-soft:#16281E; --on-accent:#0E1319; --on-green:#0E1319;
+    color-scheme:dark;
+  }
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%; scroll-padding-top:20px}
+@media (prefers-reduced-motion: no-preference){ html{scroll-behavior:smooth} }
+body{margin:0; background:var(--ground); color:var(--ink); font-family:var(--sans); font-size:16px; line-height:1.75}
+a{color:var(--accent-ink); text-decoration-color:var(--rule-strong); text-underline-offset:3px; overflow-wrap:anywhere}
+a:hover{text-decoration-color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+.skip{position:absolute; left:-999px; top:8px; background:var(--accent); color:var(--on-accent); padding:6px 12px; z-index:10}
+.skip:focus{left:8px}
+strong{font-weight:600}
+code{font-family:var(--mono); font-size:.9em; background:var(--surface-2); border:1px solid var(--rule); border-radius:3px; padding:0 .3em; overflow-wrap:break-word}
+pre code{background:none; border:none; padding:0; font-size:inherit; overflow-wrap:normal}
+
+.wrap{max-width:1120px; margin:0 auto; padding:0 20px}
+
+/* ---------- masthead ---------- */
+.masthead{padding:40px 0 26px; border-bottom:1px solid var(--rule); display:grid; grid-template-columns:minmax(0,1fr); gap:18px}
+.eyebrow{display:flex; flex-wrap:wrap; gap:8px 12px; align-items:center; color:var(--muted); font-size:13px; letter-spacing:.04em}
+.eyebrow .tag{font-family:var(--mono); font-size:12px; padding:2px 8px; border:1px solid var(--rule-strong); border-radius:3px; color:var(--ink-2)}
+.masthead h1{font-family:var(--serif); font-weight:700; line-height:1.3; font-size:clamp(28px,5.4vw,42px); margin:0; text-wrap:balance}
+.meta{display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:10px; margin:0; max-width:880px}
+.meta div{background:var(--surface); border:1px solid var(--rule); border-radius:4px; padding:10px 14px}
+.meta dt{font-size:12px; color:var(--muted); letter-spacing:.06em}
+.meta dd{margin:2px 0 0; font-size:15px; font-weight:500}
+.meta dd.num{font-family:var(--mono); font-size:14px; color:var(--accent-ink)}
+
+/* ---------- layout ---------- */
+.layout{display:grid; grid-template-columns:230px minmax(0,1fr); gap:56px; align-items:start; padding-top:28px}
+main{min-width:0; max-width:780px; padding-bottom:72px}
+@media (max-width:979px){ .layout{grid-template-columns:minmax(0,1fr); gap:0; padding-top:16px} main{max-width:none} }
+
+/* ---------- table of contents ---------- */
+.toc-wrap{position:sticky; top:16px; max-height:calc(100vh - 32px); overflow:auto; font-size:14px; padding-right:4px}
+.toc-wrap summary{cursor:pointer; font-weight:600; color:var(--ink-2); padding:4px 0; list-style:none; letter-spacing:.06em}
+.toc-wrap summary::-webkit-details-marker{display:none}
+.toc-wrap summary::after{content:"▾"; margin-left:6px; color:var(--muted)}
+.toc-wrap:not([open]) summary::after{content:"▸"}
+.toc ol{list-style:none; margin:6px 0 0; padding:0}
+.toc li{margin:0}
+.toc a{display:block; text-decoration:none; color:var(--ink-2); padding:3px 10px; border-left:2px solid var(--rule); line-height:1.5}
+.toc a:hover{color:var(--ink); border-left-color:var(--rule-strong)}
+.toc a.active{color:var(--accent-ink); border-left-color:var(--accent); background:var(--accent-soft); font-weight:500}
+.toc ol ol a{padding-left:24px; font-size:13px}
+.toc .n{font-family:var(--mono); font-size:12px; color:var(--muted); margin-right:6px}
+@media (max-width:979px){
+  .toc-wrap{position:static; max-height:none; background:var(--surface); border:1px solid var(--rule); padding:10px 14px; margin-bottom:8px}
+}
+
+/* ---------- prose ---------- */
+h2,h3{font-family:var(--serif); font-weight:700; line-height:1.35; text-wrap:balance; position:relative}
+h2{font-size:25px; margin:60px 0 18px; padding-top:26px; border-top:1px solid var(--rule)}
+main > h2:first-child{margin-top:0; padding-top:0; border-top:none}
+h3{font-size:19.5px; margin:42px 0 14px}
+h2 .sec-num{font-family:var(--mono); font-size:14px; font-weight:500; color:var(--accent-ink); background:var(--accent-soft); border-radius:3px; padding:2px 8px; margin-right:12px; vertical-align:3px}
+h3 .badge{font-family:var(--mono); font-size:12px; font-weight:500; color:var(--muted); border:1px solid var(--rule-strong); border-radius:999px; padding:1px 9px; margin-left:10px; white-space:nowrap; vertical-align:2px}
+.anchor{position:absolute; left:-1.1em; color:var(--rule-strong); text-decoration:none; font-family:var(--mono); font-size:.8em; opacity:0}
+h2:hover .anchor,h3:hover .anchor,.anchor:focus{opacity:1}
+@media (max-width:979px){ .anchor{display:none} }
+p{margin:0 0 14px}
+ul,ol{margin:0 0 14px; padding-left:1.45em}
+li{margin:4px 0}
+li > p{margin:0 0 8px}
+li > ul,li > ol{margin:6px 0 4px}
+hr{border:none; border-top:1px solid var(--rule); margin:28px 0}
+
+/* ---------- tables ---------- */
+.tablewrap{overflow-x:auto; border:1px solid var(--rule); background:var(--surface); margin:0 0 18px}
+table{border-collapse:collapse; width:100%; font-size:14.5px; line-height:1.6}
+th,td{padding:9px 14px; border-bottom:1px solid var(--rule); text-align:left; vertical-align:top}
+th{font-weight:500; color:var(--muted); font-size:13px; letter-spacing:.03em; background:var(--surface-2); white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+td.nw{white-space:nowrap}
+table.wide-first th:first-child,table.wide-first td:first-child{width:34%}
+
+/* ---------- code ---------- */
+figure.code{margin:0 0 18px; border:1px solid var(--rule); background:var(--code-bg); border-radius:4px; overflow:hidden}
+figure.code figcaption{display:flex; justify-content:space-between; align-items:center; padding:4px 6px 4px 14px; background:var(--surface-2); border-bottom:1px solid var(--rule); font-family:var(--mono); font-size:12px; color:var(--muted)}
+.copy{font:inherit; font-size:12px; color:var(--ink-2); background:transparent; border:1px solid var(--rule-strong); border-radius:3px; padding:2px 10px; cursor:pointer}
+.copy:hover{background:var(--surface); color:var(--ink)}
+.copy.done{color:var(--green); border-color:var(--green)}
+figure.code pre{margin:0; padding:12px 16px; overflow-x:auto; font-family:var(--mono); font-size:13.5px; line-height:1.65; tab-size:4}
+figure.code .c{color:var(--muted)}
+
+/* ---------- callouts ---------- */
+.checkpoint{margin:20px 0 6px; padding:12px 16px 4px; background:var(--green-soft); border-left:3px solid var(--green); border-radius:0 4px 4px 0}
+.checkpoint .label{display:inline-block; font-size:12px; font-weight:600; letter-spacing:.08em; color:var(--on-green); background:var(--green); border-radius:3px; padding:1px 8px; margin-bottom:6px}
+.note{margin:0 0 18px; padding:12px 16px 2px; background:var(--amber-soft); border-left:3px solid var(--amber); border-radius:0 4px 4px 0}
+.note .label{display:inline-block; font-size:12px; font-weight:600; letter-spacing:.08em; color:var(--amber); margin-bottom:4px}
+
+/* ---------- flow diagram ---------- */
+figure.flows{margin:0 0 20px; padding:18px 18px 8px; background:var(--surface); border:1px solid var(--rule); border-radius:4px}
+.flow-title{font-size:13px; font-weight:600; color:var(--ink-2); margin:0 0 10px; letter-spacing:.03em}
+.flow-title span{font-family:var(--mono); color:var(--accent-ink); margin-right:4px}
+.flow{list-style:none; margin:0 0 16px; padding:0; display:flex; flex-wrap:wrap; align-items:stretch; gap:6px 4px}
+.flow li{margin:0}
+.node{display:flex; flex-direction:column; justify-content:center; gap:2px; padding:8px 12px; border:1px solid var(--rule-strong); background:var(--surface-2); border-radius:4px; font-size:14px; line-height:1.45}
+.node b{font-family:var(--mono); font-size:12.5px; color:var(--accent-ink)}
+.node .steps{color:var(--ink)}
+.node em{font-style:normal; font-size:12px; color:var(--muted)}
+.node.job{background:var(--accent-soft); border-color:var(--accent)}
+.node.end{background:var(--surface); border-color:var(--ink-2); font-weight:500}
+.edge{display:flex; flex-direction:column; align-items:center; justify-content:center; min-width:34px; color:var(--muted); font-size:11.5px; line-height:1.3; text-align:center; max-width:6.5em}
+.edge::after{content:"→"; font-size:18px; line-height:1; color:var(--ink-2)}
+.edge.down{flex-basis:100%; flex-direction:row; justify-content:flex-start; gap:8px; max-width:none; padding-left:14px}
+.edge.down::after{content:"↓"; order:-1}
+.edge.gate{color:var(--green); font-weight:600}
+.edge.gate::after{color:var(--green)}
+@media (max-width:640px){
+  .flow{flex-direction:column; align-items:stretch}
+  .edge{flex-direction:row; gap:6px; min-width:0; max-width:none; justify-content:flex-start; padding-left:18px}
+  .edge::after{content:"↓"}
+  .edge.down{padding-left:18px}
+}
+
+footer{border-top:1px solid var(--rule); padding:22px 0 40px; color:var(--muted); font-size:13px; display:flex; flex-wrap:wrap; gap:6px 20px}
+
+/* ---------- print ---------- */
+@page{size:A4; margin:16mm 14mm}
+@media print{
+  :root{
+    --ground:#fff; --surface:#fff; --surface-2:#F0F2F5; --code-bg:#F6F7F9;
+    --ink:#111820; --ink-2:#3A4654; --muted:#5C6773; --rule:#C9D0D8; --rule-strong:#9AA4AF;
+    --accent:#1F49B5; --accent-ink:#173A93; --accent-soft:#EDF1FB;
+    --amber:#A85E14; --amber-soft:#FBF3E8; --green:#2E7D4F; --green-soft:#EAF4EE; --on-accent:#fff; --on-green:#fff;
+    color-scheme:light;
+  }
+  body{font-size:11.5pt; line-height:1.6}
+  .wrap{max-width:none; padding:0}
+  .layout{display:block; padding-top:10px}
+  .toc-wrap,.copy,.anchor,.skip{display:none !important}
+  .masthead{padding:0 0 14px}
+  main{max-width:none; padding-bottom:0}
+  h2,h3{break-after:avoid}
+  h2{margin-top:30px}
+  figure,.tablewrap,.checkpoint,.note,tr{break-inside:avoid}
+  figure.code pre{white-space:pre-wrap; overflow-wrap:anywhere; font-size:10pt}
+  .tablewrap{overflow:visible}
+  a{color:var(--accent-ink); text-decoration:none}
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#content">跳到正文</a>
+<div class="wrap">
+  <header class="masthead">
+    <div class="eyebrow"><span>互联网产品开发与运维（2026 秋季）</span><span class="tag">实验 1</span></div>
+    <h1>实验 1：从提交到可追溯制品的流水线</h1>
+    <dl class="meta">
+      <div><dt>发布</dt><dd class="num">2026-10-12</dd></div>
+      <div><dt>实验检查截止</dt><dd class="num">2026-10-26 23:59</dd></div>
+      <div><dt>形式</dt><dd>小组；实验资源以组为单位</dd></div>
+      <div><dt>占比</dt><dd class="num">总评 20%</dd></div>
+      <div><dt>检查方式</dt><dd>现场演示检查，安排在课外，不占上课时间；具体时间另行通知</dd></div>
+      <div><dt>预计耗时</dt><dd class="num">约 6～8 小时</dd></div>
+    </dl>
+  </header>
+  <div class="layout">
+    <details class="toc-wrap" open>
+      <summary>目录</summary>
+      <nav class="toc" aria-label="目录">
+        <ol>
+          <li><a href="#s1"><span class="n">1</span>学习产出</a>
+          </li>
+          <li><a href="#s2"><span class="n">2</span>前置知识与环境</a>
+          </li>
+          <li><a href="#s3"><span class="n">3</span>流水线全貌</a>
+            <ol>
+              <li><a href="#h-1">分支模型</a></li>
+            </ol>
+          </li>
+          <li><a href="#s4"><span class="n">4</span>任务</a>
+            <ol>
+              <li><a href="#task-0">任务 0：本地基线</a></li>
+              <li><a href="#task-1">任务 1：仓库与成员</a></li>
+              <li><a href="#task-2">任务 2：CI 工作流</a></li>
+              <li><a href="#task-3">任务 3：merge gate</a></li>
+              <li><a href="#task-4">任务 4：gate 演练</a></li>
+              <li><a href="#task-5">任务 5：发布工作流</a></li>
+              <li><a href="#task-6">任务 6：追溯、运行与回退</a></li>
+              <li><a href="#task-7">任务 7：数据与分析</a></li>
+            </ol>
+          </li>
+          <li><a href="#s5"><span class="n">5</span>选做</a>
+          </li>
+          <li><a href="#s6"><span class="n">6</span>常见问题</a>
+          </li>
+          <li><a href="#s7"><span class="n">7</span>提交与现场检查</a>
+          </li>
+          <li><a href="#s8"><span class="n">8</span>恢复与清理</a>
+          </li>
+          <li><a href="#s9"><span class="n">9</span>测量与局限</a>
+          </li>
+          <li><a href="#s10"><span class="n">10</span>参考资料</a>
+          </li>
+        </ol>
+      </nav>
+    </details>
+    <main id="content">
+<h2 id="s1"><span class="sec-num">1</span>学习产出<a class="anchor" href="#s1" aria-label="链接到本节">#</a></h2>
+<p>完成本实验后，应当能够：</p>
+<ol>
+<li>使用 GitHub 规则集为主干设置合并门禁（下文称 merge gate）：改动只能通过 PR 进入 main，且须经组员审批、CI 通过。</li>
+<li>使用 GitHub Actions 搭建“提交 → 构建 → 测试 → 打包”的流水线，验证测试失败时合并被阻止、修复后放行。</li>
+<li>使每个制品携带版本号、构建号和提交号，三者可以相互查询；推送 tag 触发发布，生成带校验和的 Release。</li>
+<li>对任一制品或正在运行的服务，指出它来自哪次提交、哪个 PR、哪次构建，即回答 L-05 提出的问题：线上运行的是哪次提交？</li>
+</ol>
+<p>本实验对应 L-05 第 9～14 页从“源码与提交”到“发布”的五个节点，第 28 页为实验预告；CI 原则见 L-02 第 9～10 页。每完成一步，都可以用 L-05 的两个问题检验：这一步的产出物是什么？出现问题时能否回到上一个状态？</p>
+<p>实验按“提出假设 → 施加变更 → 收集证据 → 分析 → 改进并复测”的顺序安排：</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>环节</th>
+<th>本实验中的对应内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="nw">假设</td>
+<td>没有流水线时，无法确定制品来自哪次提交；引入 gate 和版本标识后可以确定</td>
+</tr>
+<tr>
+<td class="nw">基线</td>
+<td>任务 0：在本地手工构建，检验该包能回答哪些问题、哪些信息会出错</td>
+</tr>
+<tr>
+<td class="nw">变更</td>
+<td>任务 1～5：创建仓库、设置规则、编写 CI 和发布工作流</td>
+</tr>
+<tr>
+<td class="nw">证据</td>
+<td>Actions 的运行记录、PR、Release、<code>trace.sh</code> 的输出，以及 <code>LAB1.md</code> 里的数据</td>
+</tr>
+<tr>
+<td class="nw">分析</td>
+<td class="nw">任务 7 的四个问题</td>
+</tr>
+<tr>
+<td class="nw">改进与复测</td>
+<td>任务 4：找出现有测试无法发现的缺陷，补充测试后再次验证；任务 6：发布 v1.0.1 后回退到 v1.0.0，并复核 v1.0.0 的制品</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="s2"><span class="sec-num">2</span>前置知识与环境<a class="anchor" href="#s2" aria-label="链接到本节">#</a></h2>
+<p>要求掌握 Git 的分支、提交、推送和 PR 操作，能在终端中运行命令，能读懂 YAML。不要求掌握 Go：能读懂示例代码即可，任务 4 只需修改几行。</p>
+<p>环境与版本如下（版本信息查于 2026-10-08，以官方文档为准）：</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>项</th>
+<th>要求</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="nw">GitHub</td>
+<td>每位成员需有账号。仓库建在组长账号下，必须公开；公开仓库使用标准 runner 运行 Actions 不收费</td>
+</tr>
+<tr>
+<td class="nw">runner</td>
+<td><code>ubuntu-24.04</code>。不要使用 <code>ubuntu-latest</code>：它会随 GitHub 升级指向新的镜像，导致构建环境不固定（L-05 第 11 页）</td>
+</tr>
+<tr>
+<td class="nw">Go</td>
+<td><code>go.mod</code> 中的 <code>go 1.26</code> 是最低版本。工作流中将版本固定到补丁号 <code>1.26.9</code>；本地使用 1.26 或更高版本即可</td>
+</tr>
+<tr>
+<td class="nw">Actions</td>
+<td><code>actions/checkout@v7</code>、<code>actions/setup-go@v7</code>、<code>actions/upload-artifact@v7</code></td>
+</tr>
+<tr>
+<td class="nw">本地</td>
+<td>必须安装 Git。在本地运行 <code>make</code> 还需要 Linux 或 WSL2、Go 1.26 及以上、GNU make 和 GNU tar。使用组内一台 Linux 主机即可，本实验只使用这一台：用于本地构建、运行 <code>trace.sh</code>，以及在任务 6 中运行服务。选做 O1 另需 Docker。命令按 x86-64（amd64）编写，arm64 主机见第 6 节</td>
+</tr>
+</tbody>
+</table></div>
+<p>本地安装 Go：从 <a href="https://go.dev/dl/" target="_blank" rel="noopener">https://go.dev/dl/</a> 或镜像 <a href="https://golang.google.cn/dl/" target="_blank" rel="noopener">https://golang.google.cn/dl/</a> 下载对应系统的压缩包，并核对页面上的 SHA-256。不要使用 <code>apt install golang-go</code> 等发行版自带的包，其版本通常偏旧（Ubuntu 24.04 上为 1.22）。本地 Go 低于 1.26 时，<code>go</code> 命令会自动从 <code>proxy.golang.org</code> 下载新的工具链，在校园网中常常超时。安装 1.26 及以上版本后，由于示例没有第三方依赖，构建时无需联网。</p>
+<p>代码载体有两种选择：</p>
+<ul>
+<li>
+<p>统一示例（默认）：课程模板仓库 <a href="https://github.com/zilinglius/operations-2026-lab1-sample" target="_blank" rel="noopener">https://github.com/zilinglius/operations-2026-lab1-sample</a> 中的 <code>enroll-conflict</code>，所有组完成相同的基础任务。</p>
+</li>
+<li>
+<p>自己的项目：也可以在小组项目上搭建同样的流水线，但须事先向老师报备（时间与方式课上说明）。准备时参照以下四个条件；检查时由老师根据项目实际情况判断，不要求与统一示例的步骤一一对应：</p>
+<ol>
+<li>仓库公开，能在 <code>ubuntu-24.04</code> runner 上构建，单次 CI 不超过 10 分钟。实验中需要反复运行 CI，耗时过长会影响进度。</li>
+<li>有自动化测试，并且能够人为使其失败（任务 4 需要）。</li>
+<li>构建产物是一个 <code>.tar.gz</code>，其中包含一个顶层目录和 <code>BUILD_INFO</code> 文件，格式与统一示例相同：必须包含 <code>name</code>、<code>version</code>、<code>build_no</code>、<code>commit</code> 四行，建议再加 <code>run_id</code>；并附一个同名的 <code>.sha256</code> 文件。</li>
+<li>提交号取自 <code>github.sha</code>（在 main 或 tag 上构建时），不得手工填写。</li>
+</ol>
+<p>满足第 3 条后，将模板仓库中的 <code>scripts/trace.sh</code> 复制到自己的仓库，即可按同样方式追溯。下文命令以统一示例为准，使用自己项目的组请将 <code>make …</code> 替换为相应的构建和测试命令。</p>
+</li>
+</ul>
+<h2 id="s3"><span class="sec-num">3</span>流水线全貌<a class="anchor" href="#s3" aria-label="链接到本节">#</a></h2>
+<figure class="flows" aria-label="流水线全貌">
+  <div class="flow-title"><span>①</span> 合并路径：PR → main</div>
+  <ol class="flow">
+    <li class="node">分支</li>
+    <li class="edge"><span>PR</span></li>
+    <li class="node job"><b>ci</b><span class="steps">gofmt → vet → test</span></li>
+    <li class="edge gate"><span>全部通过才允许合并</span></li>
+    <li class="node end">main</li>
+    <li class="edge"><span>push</span></li>
+    <li class="node job"><b>ci</b><span class="steps">… → package → 上传制品</span><em>主干制品，保留 14 天</em></li>
+  </ol>
+  <div class="flow-title"><span>②</span> 发布路径：tag → Release → 追溯</div>
+  <ol class="flow">
+    <li class="node">在 main 的提交上打 tag <code>vX.Y.Z</code></li>
+    <li class="edge"><span></span></li>
+    <li class="node job"><b>release</b><span class="steps">gate（tag 必须在 main 上）→ test → package → sha256</span></li>
+    <li class="edge down"><span>产出</span></li>
+    <li class="node end">GitHub Release<em>附件 tar.gz + .sha256</em></li>
+    <li class="edge"><span></span></li>
+    <li class="node"><code>scripts/trace.sh</code></li>
+    <li class="edge"><span></span></li>
+    <li class="node">提交、PR、构建</li>
+  </ol>
+</figure>
+<p>每个制品携带三个标识，L-05 第 13 页要求三者能够相互查询：</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>标识</th>
+<th>取自</th>
+<th>回答的问题</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="nw">版本号 <code>version</code></td>
+<td>tag，<code>v1.0.0</code> 去掉 v 得到 <code>1.0.0</code></td>
+<td class="nw">兼容性承诺，面向用户</td>
+</tr>
+<tr>
+<td class="nw">构建号 <code>build_no</code></td>
+<td><code>github.run_number</code></td>
+<td class="nw">第几次构建，面向流水线</td>
+</tr>
+<tr>
+<td class="nw">提交号 <code>commit</code></td>
+<td><code>github.sha</code>（在 main 或 tag 上构建时）</td>
+<td>对应哪一份源码，面向开发者</td>
+</tr>
+</tbody>
+</table></div>
+<p>这三个标识写在制品中的 <code>BUILD_INFO</code> 文件里。示例服务运行时，也可以通过 <code>GET /version</code> 或 <code>-version</code> 参数查询。</p>
+<p><code>BUILD_INFO</code> 中另有一行 <code>run_id</code>，取自 <code>github.run_id</code>。构建号在每个工作流中各自从 1 开始计数，<code>ci</code> 和 <code>release</code> 都有各自的第 1 次运行，仅凭构建号无法区分是哪个工作流的哪次运行。<code>run_id</code> 在整个 GitHub 范围内唯一，<code>trace.sh</code> 据此直接给出该次运行的链接。</p>
+<h3 id="h-1">分支模型<a class="anchor" href="#h-1" aria-label="链接到本节">#</a></h3>
+<p>L-05 第 10 页指出，分支模型的具体做法在实验中说明。本实验的约定如下。</p>
+<p>本实验采用主干开发（trunk-based development）。main 是唯一的长期分支，并始终处于可发布状态。每项改动从 main 创建一个短期分支，在一两天内通过 PR 合并回 main，合并后删除该分支。发布不单独创建 release 分支，而是直接在 main 的某个提交上打 tag。合并方式采用 squash：一个 PR 在 main 上只保留一个提交，其标题末尾带有 PR 编号，追溯时可由提交号找到对应的 PR。</p>
+<p>另一类做法是长期分支模型，例如 GitFlow：除 main 外还长期维护 develop 分支，功能分支、release 分支和 hotfix 分支各有用途。它适用于发布周期长、需要同时维护多个版本的软件。其代价是分支存续时间长、合并晚，冲突和集成问题直到合并时才暴露，难以做到 L-02 所述的“每人每天向主干提交”。</p>
+<p>主干开发同样有代价：测试必须可靠，否则 main 很快会失去可发布状态；改动须拆分得足够小；未完成的功能须置于功能开关之后才能合入（L-05 第 16 页）。squash 合并使 main 的历史保持线性，但分支上原有的各个提交只保留在 PR 页面中，在 main 上不可见。</p>
+<h2 id="s4"><span class="sec-num">4</span>任务<a class="anchor" href="#s4" aria-label="链接到本节">#</a></h2>
+<p>每个任务末尾的“检查点”供各组自查，现场检查也以此为依据。证据（链接、终端输出）应在操作过程中及时填入 <code>LAB1.md</code>。任务 3 之后 main 受保护，修改 <code>LAB1.md</code> 也须通过 PR，可以将几项修改合并在一个 PR 中提交。</p>
+<h3 id="task-0">任务 0：本地基线<span class="badge">约 15 分钟</span><a class="anchor" href="#task-0" aria-label="链接到本节">#</a></h3>
+<p>在组内的 Linux 主机上安装 Go（见第 2 节），克隆模板仓库并打包一次，记录 <code>BUILD_INFO</code>、二进制文件的 sha256，以及 Go 记录的版本控制信息：</p>
+<figure class="code"><figcaption><span>bash</span><button class="copy" type="button" aria-label="复制这段代码">复制</button></figcaption><pre><code>git clone https://github.com/zilinglius/operations-2026-lab1-sample.git ~/lab1-local &amp;&amp; cd ~/lab1-local
+make package VERSION=1.0.0 BUILD_NO=1
+P=dist/enroll-conflict_1.0.0_linux_amd64
+cp $P/BUILD_INFO ~/BUILD_INFO.first
+cat $P/BUILD_INFO
+sha256sum $P/enroll-conflict
+go version -m $P/enroll-conflict | grep vcs</code></pre></figure>
+<p>然后修改 <code>conflict.go</code> 中的任意一行（修改注释亦可），不要提交，用相同参数再次打包，比较前后两次的结果：</p>
+<figure class="code"><figcaption><span>bash</span><button class="copy" type="button" aria-label="复制这段代码">复制</button></figcaption><pre><code>make package VERSION=1.0.0 BUILD_NO=1
+diff ~/BUILD_INFO.first $P/BUILD_INFO &amp;&amp; echo "BUILD_INFO 没有变化"
+sha256sum $P/enroll-conflict
+go version -m $P/enroll-conflict | grep vcs
+git checkout -- conflict.go             <span class="c"># 撤销刚才的改动</span></code></pre></figure>
+<p>根据输出回答 <code>LAB1.md</code> 第 2 节的问题。该结果是后续所有任务的对照基线。</p>
+<p>该克隆仅用于任务 0。它的 origin 是模板仓库，而任务 1 生成的小组仓库与模板没有共同的提交，后续追溯都须在小组仓库的克隆中进行。</p>
+<div class="checkpoint"><span class="label">检查点</span><p><code>LAB1.md</code> 第 2 节已填写，粘贴的是实际得到的输出。</p></div>
+<h3 id="task-1">任务 1：仓库与成员<span class="badge">约 30 分钟</span><a class="anchor" href="#task-1" aria-label="链接到本节">#</a></h3>
+<ol>
+<li>组长打开模板仓库 <a href="https://github.com/zilinglius/operations-2026-lab1-sample" target="_blank" rel="noopener">https://github.com/zilinglius/operations-2026-lab1-sample</a>，点击 Use this template → Create a new repository。所有者选择组长账号，仓库名建议为 <code>ops-lab1-&lt;组号&gt;</code>，可见性选择 Public，不勾选 Include all branches。生成的仓库已包含示例的全部文件，包括隐藏文件 <code>.gitignore</code> 和 <code>.gitattributes</code>。
+使用自己项目的组不使用模板，自行新建公开仓库，不勾选自动生成 README、<code>.gitignore</code> 和许可证，然后按第 2 节的四个条件准备项目。</li>
+<li>在 Settings → Collaborators 中邀请其他成员并授予 Write 权限，成员接受邀请。</li>
+<li>在 Settings → General → Pull Requests 中只允许 squash 合并，并勾选合并后自动删除分支，理由见第 3 节“分支模型”。</li>
+<li>组内先确定分工。每位成员至少要有一个由本人发起并合入的 PR，这是第 7 节的硬性要求。必做任务共有四个 PR：任务 4 两个，任务 5、任务 6 各一个。人数较多的组，可以将更新 <code>LAB1.md</code> 或其他小改动分配给其他成员。此外，每个 PR 都须由另一位组员审批（任务 3）。</li>
+</ol>
+<div class="checkpoint"><span class="label">检查点</span><p>每位成员都能克隆小组仓库并推送分支；未登录时也能打开仓库页面。</p></div>
+<h3 id="task-2">任务 2：CI 工作流<span class="badge">约 60 分钟</span><a class="anchor" href="#task-2" aria-label="链接到本节">#</a></h3>
+<p>在小组仓库中创建 <code>.github/workflows/ci.yml</code>，补全下面骨架中的 <code>TODO</code>：</p>
+<figure class="code"><figcaption><span>yaml</span><button class="copy" type="button" aria-label="复制这段代码">复制</button></figcaption><pre><code>name: ci
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  ci:                       <span class="c"># job 名即任务 3 中要选择的必需检查名称</span>
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      <span class="c"># TODO 1：用 actions/setup-go 安装 Go，go-version 写 1.26.9</span>
+      <span class="c"># TODO 2：添加一个 step，打印 github.event_name、github.ref、github.sha</span>
+      <span class="c">#         和 github.event.pull_request.head.sha（问题 2 需要）。</span>
+      <span class="c">#         放在测试之前，以便测试失败时也能看到</span>
+      <span class="c"># TODO 3：make fmt-check、make vet、make test 各占一个 step，</span>
+      <span class="c">#         失败时可以立即看出是哪一步</span>
+      <span class="c"># TODO 4：只在 push 到 main 时执行（if: github.event_name == 'push'）：</span>
+      <span class="c">#         make package，VERSION 用 0.0.0-main，BUILD_NO 用 github.run_number，</span>
+      <span class="c">#         RUN_ID 用 github.run_id，COMMIT 用 github.sha；</span>
+      <span class="c">#         再用 sha256sum 打印二进制文件和 tar.gz 的校验和；</span>
+      <span class="c">#         最后用 actions/upload-artifact 上传 dist/*.tar.gz 和 dist/*.tar.gz.sha256，</span>
+      <span class="c">#         artifact 名称中包含提交号和构建号，retention-days 设为 14</span></code></pre></figure>
+<aside class="note"><span class="label">提示</span><ul>
+<li>不要为该工作流添加 <code>paths</code> 或 <code>paths-ignore</code>。被过滤的工作流不会运行，其检查会一直处于 Pending 状态，以它为必需检查的 PR 将无法合并（见第 6 节）。</li>
+<li>在 <code>run:</code> 中使用 <code>${{ … }}</code> 的值时，先将其放入该 step 的 <code>env:</code>，再在脚本中以环境变量引用。本实验用到的提交号、编号是安全的；但 PR 标题、分支名等可由他人控制的值，若直接拼接进脚本会导致命令注入。请从现在起采用这一写法。</li>
+<li>此时 main 尚未受保护，<code>ci.yml</code> 可以直接推送到 main，这是整个实验中唯一一次不经过 PR 的推送。使用 HTTPS 和个人访问令牌推送被拒时，检查令牌是否具有 <code>workflow</code> 权限。</li>
+</ul></aside>
+<div class="checkpoint"><span class="label">检查点</span><p>Actions 页面有一次成功（绿色）的 <code>ci</code> 运行，并产出一个 artifact。下载 artifact 需要登录，下载得到的是 zip 文件。将其解压到小组仓库克隆的 <code>dist/</code> 目录下（<code>dist/</code> 已被 <code>.gitignore</code> 忽略），执行 <code>git pull</code> 后运行 <code>scripts/trace.sh dist/&lt;解压出的 tar.gz&gt;</code>，能够读出提交号。</p></div>
+<h3 id="task-3">任务 3：merge gate<span class="badge">约 30 分钟</span><a class="anchor" href="#task-3" aria-label="链接到本节">#</a></h3>
+<p>merge gate 即 L-05 第 12 页所说的合并门禁。进入 Settings → Rulesets → New ruleset → New branch ruleset（Rulesets 在左侧菜单中直接可见；界面文字以 GitHub 当前页面为准，规则的正式名称见官方文档 <em>Available rules for rulesets</em>）。新建一个作用于默认分支、状态为 Active 的规则集，Bypass list 保持为空，至少启用以下四条规则：</p>
+<ul>
+<li>Restrict deletions：禁止删除分支。</li>
+<li>Block force pushes：禁止强制推送。</li>
+<li>Require a pull request before merging：合并前必须通过 PR。Required approvals 设为 1。GitHub 不允许作者批准自己的 PR，因此每个 PR 都须由另一位组员审批。</li>
+<li>Require status checks to pass：合并前必须通过状态检查，添加 <code>ci</code>。</li>
+</ul>
+<p>审批是人工检查，<code>ci</code> 是自动检查，分别对应 L-05 第 10 页的两道门禁。</p>
+<p><code>ci</code> 已在任务 2 中运行过，添加检查时可以搜索到；搜索不到时先运行一次。如果 Settings 中找不到 Rulesets，或提示需要升级付费计划，<strong>请立即告知老师</strong>，不要将仓库改为私有，也不要自行付费。</p>
+<p>然后用组长账号验证规则对管理员同样生效。先用 <code>git status</code> 确认工作区干净，因为最后一行命令会丢弃本地未提交的改动：</p>
+<figure class="code"><figcaption><span>bash</span><button class="copy" type="button" aria-label="复制这段代码">复制</button></figcaption><pre><code>git switch main
+git commit --allow-empty -m "test: direct push"
+git push origin main            <span class="c"># 应当被拒绝</span>
+git reset --hard origin/main    <span class="c"># 丢弃本地的这个空提交</span></code></pre></figure>
+<p>被拒时的输出大致如下（以实际输出为准），将其粘贴到 <code>LAB1.md</code>：</p>
+<figure class="code"><figcaption><span>text</span><button class="copy" type="button" aria-label="复制这段代码">复制</button></figcaption><pre><code>remote: - Changes must be made through a pull request.
+remote: - Required status check "ci" is expected.
+ ! [remote rejected] main -&gt; main (push declined due to repository rule violations)</code></pre></figure>
+<p>如果推送成功，说明规则集未启用，或 Bypass list 中有成员，请返回检查。</p>
+<div class="checkpoint"><span class="label">检查点</span><p>直接推送 main 被拒；<code>LAB1.md</code> 第 3 节写明了启用的规则、审批人数和必需检查的名称。</p></div>
+<h3 id="task-4">任务 4：gate 演练<span class="badge">约 60 分钟</span><a class="anchor" href="#task-4" aria-label="链接到本节">#</a></h3>
+<p>本任务分两轮。第一轮验证 gate 能拦住测试可以发现的缺陷；第二轮找出测试无法发现的缺陷，补充测试后，再验证 gate 能否拦住它。</p>
+<p>第一轮：失败、修复、放行。</p>
+<ol>
+<li>从 main 创建分支，做一个有意义的小改动，例如为 <code>conflict_test.go</code> 增加一个用例；并在同一个提交中有意引入一个会导致测试失败的缺陷。统一示例可以修改 <code>conflict.go</code> 中的 <code>weeksOverlap</code>，使单周班与双周班被判为冲突，即 L-05 课程实践第 3 题的场景。使用自己项目的组自行设计缺陷。</li>
+<li>推送分支并发起 PR。<code>ci</code> 失败后合并按钮变为不可用，鼠标悬停时显示类似 “Merging is blocked due to failing merge requirements” 的提示（以实际文字为准）。记录这次失败运行的链接，以及发起 PR 和 <code>ci</code> 给出结果的时间。</li>
+<li>在同一分支上追加修复提交，<code>ci</code> 重新运行并通过。记录链接和时间。</li>
+<li>请另一位组员审批，然后 squash 合并，观察 main 上的 push 运行，记录链接和合入时间。合并前先修改 PR 标题：它将成为 main 上该提交的标题，默认取分支第一个提交的说明。若不删去“引入缺陷”之类的字样，它将永久保留在 main 的历史中。</li>
+</ol>
+<p>第二轮：补充测试并复测。</p>
+<ol start="5">
+<li>阅读 <code>conflict.go</code> 和现有测试，找出一个现有测试无法发现的缺陷：代码行为已被改错，<code>make test</code> 却仍然通过。</li>
+<li>新建一个分支，只提交该缺陷，推送并发起 PR，确认 <code>ci</code> 仍然通过、gate 没有拦住它。<strong>此时不要合并。</strong></li>
+<li>在同一分支上补充一个能发现该缺陷的测试，推送后 <code>ci</code> 应当失败。</li>
+<li>撤销该缺陷，<code>ci</code> 通过后经审批合入。squash 之后，main 上只增加了一个新测试。</li>
+</ol>
+<div class="checkpoint"><span class="label">检查点</span><p><code>LAB1.md</code> 第 3 节包含两轮演练的全部运行链接，第 5 节包含第一轮的时间线；两个 PR 的页面上都能看到 <code>ci</code> 失败的记录。</p></div>
+<h3 id="task-5">任务 5：发布工作流<span class="badge">约 60 分钟</span><a class="anchor" href="#task-5" aria-label="链接到本节">#</a></h3>
+<p>发布工作流在推送 tag 时运行。它首先执行 release gate，即 L-05 第 12 页的发布门禁：只有 main 历史上的提交才能发布。随后在该提交上重新编译一次，而不是直接使用 <code>ci</code> 在 main 上产出的制品，因为版本号要通过编译参数写入二进制文件。这是本实验有意采用的简化，它与 L-05 第 11 页“一次构建、多处部署”的冲突留到问题 3 中讨论。</p>
+<p>通过 PR 合入 <code>.github/workflows/release.yml</code>，补全下面的骨架：</p>
+<figure class="code"><figcaption><span>yaml</span><button class="copy" type="button" aria-label="复制这段代码">复制</button></figcaption><pre><code>name: release
+
+on:
+  push:
+    tags:
+      - v[0-9]+.[0-9]+.[0-9]+      <span class="c"># 匹配 v1.0.0 形式的 tag；这是 GitHub 的过滤语法，不是正则表达式</span>
+
+permissions:
+  contents: write                   <span class="c"># 创建 Release 需要写权限；ci 保持只读</span>
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0            <span class="c"># 获取完整历史，才能判断 tag 是否在 main 上</span>
+      <span class="c"># TODO 1：release gate。tag 指向的提交（GITHUB_SHA）必须是 origin/main 的祖先，</span>
+      <span class="c">#         否则输出错误信息并 exit 1。提示：git merge-base --is-ancestor</span>
+      <span class="c"># TODO 2：安装 Go 1.26.9，发布前再运行一遍 make fmt-check vet test</span>
+      <span class="c"># TODO 3：make package，VERSION 取 tag 去掉开头的 v，BUILD_NO 用 github.run_number，</span>
+      <span class="c">#         RUN_ID 用 github.run_id，COMMIT 用 GITHUB_SHA；再用 sha256sum 打印校验和</span>
+      <span class="c"># TODO 4：用 gh release create 创建 Release，附上 dist/*.tar.gz 和 dist/*.tar.gz.sha256。</span>
+      <span class="c">#         runner 上已预装 gh，通过环境变量 GH_TOKEN 传入 ${{ github.token }}</span></code></pre></figure>
+<p>合入后打 tag：</p>
+<figure class="code"><figcaption><span>bash</span><button class="copy" type="button" aria-label="复制这段代码">复制</button></figcaption><pre><code>git switch main &amp;&amp; git pull     <span class="c"># tag 须打在已包含 release.yml 的提交上</span>
+git tag -a v1.0.0 -m "v1.0.0"
+git push origin v1.0.0</code></pre></figure>
+<p>待 <code>release</code> 运行完成后，到仓库的 Releases 页面下载两个附件，用 <code>sha256sum -c</code> 校验，并将 sha256 记入 <code>LAB1.md</code> 第 4 节，任务 6 将以此值作对照。</p>
+<p>验证 release gate：在一个未合入 main 的提交上打 tag，确认发布被拦截。</p>
+<figure class="code"><figcaption><span>bash</span><button class="copy" type="button" aria-label="复制这段代码">复制</button></figcaption><pre><code>git switch -c scratch/gate-test
+git commit --allow-empty -m "test: 不合入 main 的提交"
+git push origin scratch/gate-test
+git tag -a v0.0.1 -m "gate test"
+git push origin v0.0.1           <span class="c"># release 应当在 release gate 一步失败，不产生 Release</span>
+<span class="c"># 清理</span>
+git push --delete origin v0.0.1 scratch/gate-test
+git tag -d v0.0.1
+git switch main</code></pre></figure>
+<div class="checkpoint"><span class="label">检查点</span><p>Releases 页面有 v1.0.0，附件校验通过，sha256 已记入 <code>LAB1.md</code>；已记录 release gate 失败的那次运行的链接；测试用的 tag 和分支已删除，且未留下 Release。</p></div>
+<h3 id="task-6">任务 6：追溯、运行与回退<span class="badge">约 45 分钟</span><a class="anchor" href="#task-6" aria-label="链接到本节">#</a></h3>
+<ol>
+<li>
+<p>再做一个小改动，完成 PR、审批、合并流程，然后发布 <code>v1.0.1</code>。</p>
+</li>
+<li>
+<p>在组内的 Linux 主机上克隆小组仓库（不要使用任务 0 中的模板克隆；此前已克隆的，执行 <code>git pull</code> 即可）。将两个版本的附件下载到 <code>dist/release/</code>，Release 附件无需登录即可下载：</p>
+<figure class="code"><figcaption><span>bash</span><button class="copy" type="button" aria-label="复制这段代码">复制</button></figcaption><pre><code>git clone https://github.com/&lt;组长账号&gt;/&lt;仓库名&gt;.git ~/lab1 &amp;&amp; cd ~/lab1
+REPO=https://github.com/&lt;组长账号&gt;/&lt;仓库名&gt;
+mkdir -p dist/release
+for v in 1.0.0 1.0.1; do
+  f=enroll-conflict_${v}_linux_amd64.tar.gz
+  curl -fL -o dist/release/$f        $REPO/releases/download/v$v/$f
+  curl -fL -o dist/release/$f.sha256 $REPO/releases/download/v$v/$f.sha256
+done
+sha256sum dist/release/*.tar.gz      <span class="c"># 将 v1.0.0 的值与任务 5 记录的值比较</span></code></pre></figure>
+</li>
+<li>
+<p>对两个附件运行 <code>trace.sh</code>（依赖 GNU tar）：</p>
+<figure class="code"><figcaption><span>bash</span><button class="copy" type="button" aria-label="复制这段代码">复制</button></figcaption><pre><code>scripts/trace.sh dist/release/enroll-conflict_1.0.0_linux_amd64.tar.gz . origin/main
+scripts/trace.sh dist/release/enroll-conflict_1.0.1_linux_amd64.tar.gz . origin/main</code></pre></figure>
+<p>根据输出中的提交号在 GitHub 上找到引入该提交的 PR（squash 合并的提交标题末尾带有 <code>(#编号)</code>）；构建它的那次运行，直接使用 <code>trace.sh</code> 给出的链接。填写 <code>LAB1.md</code> 第 4 节。再检查：v1.0.0 的构建号是多少？在 Actions 中分别查看 <code>ci</code> 和 <code>release</code> 的运行列表，是否各有一个同号的运行？仅凭构建号能否确定是哪次运行？</p>
+</li>
+<li>
+<p>运行服务，查看“线上”运行的是哪个版本。先运行 v1.0.1，再切换回 v1.0.0，这就是一次最简单的回退：</p>
+<figure class="code"><figcaption><span>bash</span><button class="copy" type="button" aria-label="复制这段代码">复制</button></figcaption><pre><code>cd dist/release
+tar -xzf enroll-conflict_1.0.1_linux_amd64.tar.gz
+tar -xzf enroll-conflict_1.0.0_linux_amd64.tar.gz
+./enroll-conflict_1.0.1_linux_amd64/enroll-conflict -addr 127.0.0.1:18080 &amp;
+sleep 1; curl -s 127.0.0.1:18080/version
+kill $!                              <span class="c"># 停止 v1.0.1</span>
+./enroll-conflict_1.0.0_linux_amd64/enroll-conflict -addr 127.0.0.1:18080 &amp;
+sleep 1; curl -s 127.0.0.1:18080/version
+kill $!
+cd ~/lab1</code></pre></figure>
+<p>将两次 <code>/version</code> 的输出粘贴到 <code>LAB1.md</code> 第 4 节，问题 4 需要使用。若 18080 端口被占用，请更换端口。arm64 主机无法运行这两个二进制文件，见第 6 节。</p>
+</li>
+</ol>
+<div class="checkpoint"><span class="label">检查点</span><p>两个版本都能追溯到提交、PR 和构建，<code>trace.sh</code> 的退出码为 0；<code>LAB1.md</code> 第 4 节包含两次 <code>/version</code> 的输出，以及 v1.0.0 附件在发布当时和发布 v1.0.1 之后的 sha256。</p></div>
+<h3 id="task-7">任务 7：数据与分析<span class="badge">约 90 分钟</span><a class="anchor" href="#task-7" aria-label="链接到本节">#</a></h3>
+<p>填写完 <code>LAB1.md</code> 第 5 节的数据，回答第 6 节的四个问题：gate 的收益与成本、PR 中的构建与 main 上的构建、可重复构建、发布与回退。必须使用本组的运行数据作答，并写明结论的成立条件。</p>
+<h2 id="s5"><span class="sec-num">5</span>选做<a class="anchor" href="#s5" aria-label="链接到本节">#</a></h2>
+<p>选做不影响必做部分的评分，仅用于加分，上限见第 7 节。</p>
+<ul>
+<li>O1 容器镜像（需要 Docker）：
+<ul>
+<li>内容：在 <code>release.yml</code> 中增加一个 job，用 Release 附件和仓库中的 <code>Dockerfile</code> 构建镜像（镜像中不重新编译），推送到 <code>ghcr.io/&lt;小写的仓库路径&gt;</code>。记录镜像摘要（digest）和运行容器的主机架构，并用摘要而非 tag 运行一次容器。</li>
+<li>CPU 架构：镜像中放的是 Actions 构建的 <code>linux/amd64</code> 二进制文件，因此镜像也是 <code>linux/amd64</code>。在 arm64 主机（例如 Apple 芯片的 Mac）上运行时，Docker 会提示平台不匹配，需加 <code>--platform linux/amd64</code> 以模拟方式运行；能否运行取决于 Docker 的模拟支持，且速度较慢。多架构镜像不在本实验范围内。</li>
+<li>思考：发布 job 创建的 Release 为什么不会触发另一个工作流，以致镜像 job 只能写在同一个工作流中？GitHub Container Registry 的包默认私有，关联到仓库后通常继承仓库的可见性，请自行确认镜像能否匿名拉取。</li>
+</ul>
+</li>
+<li>O2 缓存对反馈时间的影响：<code>setup-go</code> 默认开启缓存，因此各组的 <code>ci</code> 实际上一直在使用缓存。先写下预期：示例没有第三方依赖，缓存能节省多少时间？然后发起一个 PR，将 <code>setup-go</code> 的 <code>cache</code> 设为 <code>false</code> 作为对照（该 PR 不合并），用 Re-run all jobs 反复运行。有缓存和无缓存各至少运行 5 次，全部列出，并说明时长波动的来源和结论的局限。共享 runner 的负载会使单次时长存在很大噪声。</li>
+<li>O3 迁移到小组项目：主线使用统一示例的组，可以将同样的 gate 和发布流水线迁移到自己的项目上，并说明迁移中遇到的差异。</li>
+</ul>
+<h2 id="s6"><span class="sec-num">6</span>常见问题<a class="anchor" href="#s6" aria-label="链接到本节">#</a></h2>
+<div class="tablewrap"><table class="wide-first">
+<thead>
+<tr>
+<th>现象</th>
+<th>原因与处理</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="nw">规则集里搜不到 <code>ci</code></td>
+<td>状态检查通常要先运行一次才会出现在候选列表中；检查名称是 job 名 <code>ci</code>，而不是文件名</td>
+</tr>
+<tr>
+<td>PR 一直显示 “Waiting for status to be reported”</td>
+<td>工作流因 <code>paths</code>、分支过滤或提交说明中的跳过标记而被跳过，或 job 已改名而规则集中仍是 <code>ci</code>。检查会一直处于 Pending，PR 无法合并。官方文档建议：必需的工作流不要使用路径或分支过滤</td>
+</tr>
+<tr>
+<td class="nw">检查通过了，还是不能合并</td>
+<td>必需检查须在 PR 最新的提交上通过，旧提交上的结果无效；另请确认是否缺少审批</td>
+</tr>
+<tr>
+<td>推送 <code>.github/workflows/*.yml</code> 被拒</td>
+<td>个人访问令牌缺少 <code>workflow</code> 权限；补充该权限或改用 SSH</td>
+</tr>
+<tr>
+<td>推送 tag 后没有触发 <code>release</code></td>
+<td>tag 名须符合 <code>v数字.数字.数字</code>；tag 指向的提交中必须已包含 <code>release.yml</code>，打 tag 前先执行 <code>git switch main &amp;&amp; git pull</code></td>
+</tr>
+<tr>
+<td><code>release</code> 失败，Re-run 后仍失败</td>
+<td>重新运行使用的是 tag 所指提交中的工作流文件，Re-run 无法改变它。先通过 PR 修复 <code>release.yml</code>，按第 8 节删除这个尚未发布的 tag，再在新的 main 提交上重新打 tag</td>
+</tr>
+<tr>
+<td><code>gh release create</code> 返回 403</td>
+<td>缺少 <code>permissions: contents: write</code></td>
+</tr>
+<tr>
+<td class="nw">重新运行后构建号没变</td>
+<td>Re-run 不改变 <code>github.run_number</code> 和 <code>github.run_id</code>，只增加 <code>github.run_attempt</code>。问题 3 正是利用这一点实现“同一构建号重复构建”</td>
+</tr>
+<tr>
+<td>出现 <code>go: downloading go1.26…</code> 后超时</td>
+<td>本地 Go 低于 1.26，<code>go</code> 命令正在自动下载新的工具链。按第 2 节安装 1.26 及以上版本；暂时无法安装时，可先设置 <code>GOPROXY=https://goproxy.cn,direct</code> 后重试</td>
+</tr>
+<tr>
+<td>在 arm64 主机上运行二进制文件报 <code>exec format error</code>，或 Docker 提示平台不匹配</td>
+<td>制品是 <code>linux/amd64</code>：runner 为 x64，<code>Makefile</code> 默认 <code>GOARCH=amd64</code>。追溯只读取 <code>BUILD_INFO</code>，不受影响。本地构建可使用 <code>make package GOARCH=arm64</code>，包名中的 <code>amd64</code> 将变为 <code>arm64</code>，后续命令中的文件名相应替换。任务 6 第 4 步需要运行 Release 中的二进制文件，请换用 x86-64 主机；容器加 <code>--platform linux/amd64</code>，由 Docker 模拟运行</td>
+</tr>
+<tr>
+<td>Windows 上 <code>make</code> 报错</td>
+<td>使用 WSL2，或直接登录组内的 Linux 主机操作</td>
+</tr>
+<tr>
+<td>访问 GitHub 很慢或超时</td>
+<td>重试；由网络条件较好的成员操作；不要向仓库提交大文件</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="s7"><span class="sec-num">7</span>提交与现场检查<a class="anchor" href="#s7" aria-label="链接到本节">#</a></h2>
+<p><strong>提交：</strong> 提交小组仓库的地址，并按已公布的组号规则写明组号；提交渠道另行通知。</p>
+<p>评分以截止时刻 2026-10-26 23:59 为准：只计入此前合入 main 的内容和已发布的 Release，之后合入的 PR、新建的 Release 不计分。main 受保护，每次改动的合入时间均由 GitHub 记录。</p>
+<p>检查结束且成绩公布之前，不要删除仓库、PR、Release 和 Actions 记录，也不要将仓库改为私有。主干上的 artifact 按任务 2 的设置只保留 14 天（未设置时默认 90 天），且须登录才能下载，因此长期证据以 Release 为准；Release 附件无需登录即可下载。</p>
+<p><strong>现场检查：</strong> 安排在课外，每组约 20 分钟，老师按清单核对，评分依据均可在仓库中查到。使用自己项目的组，各项是否达到要求由老师根据项目情况判断。</p>
+<ol>
+<li>打开仓库中的 <code>LAB1.md</code>，按其中的链接逐项核对。</li>
+<li>查看规则集页面；组长当场直接推送 <code>main</code>，应当被拒绝。</li>
+<li>打开两轮 gate 演练的 PR，说明每一步发生了什么。</li>
+<li>老师指定 v1.0.0 或 v1.0.1，当场对其运行 <code>scripts/trace.sh</code>，并解释每一行输出。</li>
+<li>回答两个追问及老师的随机提问，内容围绕本组完成的步骤和第 6 节的分析，由老师指定组员回答。追问用于确认分析由小组独立完成；无法回答的，对应的分析题酌情扣分。</li>
+</ol>
+<p><strong>评分：</strong> 满分 100 分，选做最多加 10 分，总分超过 100 分的按 100 分计。</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>项</th>
+<th>分值</th>
+<th>依据</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="nw">A merge gate</td>
+<td class="nw">10</td>
+<td>规则集包含 PR（至少 1 人审批）和必需检查 <code>ci</code>，对管理员同样生效（直接推送被拒）；两轮演练的记录完整</td>
+</tr>
+<tr>
+<td class="nw">B CI 流水线</td>
+<td class="nw">20</td>
+<td><code>ci</code> 在 PR 和 push 时均会触发；步骤拆分清晰；runner 和 Go 均固定到具体版本；没有路径过滤；失败时能够阻止合并</td>
+</tr>
+<tr>
+<td class="nw">C 制品与版本</td>
+<td class="nw">20</td>
+<td>制品携带版本号、构建号、提交号，并写入 <code>BUILD_INFO</code>；主干制品只在 main 上产出；附校验和</td>
+</tr>
+<tr>
+<td class="nw">D 发布与追溯</td>
+<td class="nw">20</td>
+<td>tag 触发发布；有 release gate 并演示过拒绝；有两个 Release；现场对指定版本追溯正确；有运行与回退时的 <code>/version</code> 记录</td>
+</tr>
+<tr>
+<td class="nw">E 记录与分析</td>
+<td class="nw">30</td>
+<td>基线与数据 6 分：<code>LAB1.md</code> 第 2、4、5 节和问题 3 的数据真实，与仓库中的记录一致。问题 1～4 各 6 分：判断准确，使用本组数据，阐明机制，写明成立条件</td>
+</tr>
+<tr>
+<td class="nw">选做</td>
+<td class="nw">≤ 10</td>
+<td>O1 至多 4 分，O2、O3 各至多 3 分</td>
+</tr>
+</tbody>
+</table></div>
+<p>硬性要求：</p>
+<div class="tablewrap"><table class="wide-first">
+<thead>
+<tr>
+<th>要求</th>
+<th>达不到时</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="nw">检查时仓库为公开状态</td>
+<td>无法核对，所有评分项都不得分</td>
+</tr>
+<tr>
+<td>至少两个 Release（v1.0.0、v1.0.1）</td>
+<td class="nw">D 不得分</td>
+</tr>
+<tr>
+<td>每位成员至少有一个合入的 PR，按 <code>LAB1.md</code> 第 8 节和 PR 记录核对</td>
+<td class="nw">A 不得分</td>
+</tr>
+<tr>
+<td><code>LAB1.md</code> 中的链接均可打开</td>
+<td>无法打开的链接视为缺少该项证据，其所支撑的评分项不得分</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="s8"><span class="sec-num">8</span>恢复与清理<a class="anchor" href="#s8" aria-label="链接到本节">#</a></h2>
+<ul>
+<li>推送错误且尚未发布的 tag：先 <code>git push --delete origin &lt;tag&gt;</code>，再 <code>git tag -d &lt;tag&gt;</code>。</li>
+<li>已发布的版本号不删除、不复用。发布有误时，应再发布一个修订版本（例如 v1.0.2），并在旧版本的说明中写明问题。制品不可变，见 L-05 第 11、18 页。</li>
+<li>临时分支：PR 合并后自动删除；<code>scratch/</code> 等分支用 <code>git push --delete origin &lt;分支&gt;</code> 清理。</li>
+<li>本地：<code>make clean</code> 删除 <code>dist/</code>（任务 6 下载的附件也在其中）；用 <code>pgrep -a enroll-conflict</code> 确认任务 6 启动的服务均已停止；完成 O1 的组用 <code>docker rmi</code> 删除本地镜像。</li>
+<li>证据按第 7 节的要求保留到成绩公布。</li>
+</ul>
+<h2 id="s9"><span class="sec-num">9</span>测量与局限<a class="anchor" href="#s9" aria-label="链接到本节">#</a></h2>
+<ul>
+<li><code>ci</code> 的运行时长受共享 runner 负载的影响，单次数据噪声很大。应列出全部运行，不要只给出平均值，并说明样本量很小。</li>
+<li>“提交到发布的间隔”借用了 L-05 第 7 页 DORA 的“变更前置时间”，但几个 PR 的样本不能代表真实团队的水平。</li>
+<li>工作流中的 Go 固定为 1.26.9，本地是各组自行安装的版本，两者可能不同。<code>BUILD_INFO</code> 中记录了 <code>go=</code> 版本，比较二进制哈希之前应先核对该项。</li>
+<li>版本固定到补丁号，构建环境才能复现；代价是 Go 发布安全修复时不会自动更新，需要人工修改。<code>ubuntu-24.04</code> 固定的是系统版本，GitHub 仍会定期更新镜像中的软件；<code>actions/checkout@v7</code> 也只固定了主版本，v7 之内的更新会自动生效，要完全固定须写到提交 SHA。这几处都是“固定”与“及时更新”之间的取舍。</li>
+</ul>
+<h2 id="s10"><span class="sec-num">10</span>参考资料<a class="anchor" href="#s10" aria-label="链接到本节">#</a></h2>
+<ul>
+<li>L-02 第 9～10 页：CI 原则；L-05 第 9～14 页、第 28 页。</li>
+<li>Martin Fowler, Patterns for Managing Source Code Branches（martinfowler.com，2020）。</li>
+<li>GitHub Docs：About rulesets；Available rules for rulesets；Events that trigger workflows（<code>pull_request</code> 事件的 <code>GITHUB_SHA</code>）；Contexts（<code>run_number</code>、<code>run_attempt</code>）；Troubleshooting required status checks；Working with the Container registry；Immutable releases；GITHUB_TOKEN（用 <code>GITHUB_TOKEN</code> 触发的事件不会再触发新的工作流运行，<code>workflow_dispatch</code> 和 <code>repository_dispatch</code> 除外）。</li>
+<li>The Twelve-Factor App：V. Build, release, run。</li>
+<li>Semantic Versioning 2.0.0（semver.org）。</li>
+<li>DORA, Accelerate State of DevOps Report（dora.dev）。</li>
+</ul>
+    </main>
+  </div>
+  <footer>
+    <span>互联网产品开发与运维（2026 秋季） · 实验 1</span>
+    <span>本页由 guide.md 生成，内容以课程平台发布的版本为准</span>
+  </footer>
+</div>
+<script>
+(function () {
+  "use strict";
+
+  // 窄屏时目录默认折叠
+  var toc = document.querySelector("details.toc-wrap");
+  if (toc && window.matchMedia("(max-width: 979px)").matches) { toc.removeAttribute("open"); }
+
+  // 代码块复制
+  function fallbackCopy(text) {
+    var ta = document.createElement("textarea");
+    ta.value = text; ta.setAttribute("readonly", ""); ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    var ok = false;
+    try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+    document.body.removeChild(ta);
+    return ok;
+  }
+  Array.prototype.forEach.call(document.querySelectorAll("figure.code .copy"), function (btn) {
+    btn.addEventListener("click", function () {
+      var code = btn.closest("figure").querySelector("code");
+      var text = code.textContent;
+      var done = function (ok) {
+        btn.textContent = ok ? "已复制" : "复制失败";
+        btn.classList.toggle("done", ok);
+        setTimeout(function () { btn.textContent = "复制"; btn.classList.remove("done"); }, 1600);
+      };
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(function () { done(true); }, function () { done(fallbackCopy(text)); });
+      } else { done(fallbackCopy(text)); }
+    });
+  });
+
+  // 目录跟随滚动高亮
+  var links = {};
+  Array.prototype.forEach.call(document.querySelectorAll(".toc a"), function (a) {
+    links[decodeURIComponent(a.getAttribute("href").slice(1))] = a;
+  });
+  var heads = Array.prototype.slice.call(document.querySelectorAll("main h2[id], main h3[id]"));
+  var ticking = false;
+  function update() {
+    ticking = false;
+    var y = 90, current = null;
+    for (var i = 0; i < heads.length; i++) {
+      if (heads[i].getBoundingClientRect().top <= y) { current = heads[i]; } else { break; }
+    }
+    if (!current && heads.length) { current = heads[0]; }
+    Object.keys(links).forEach(function (id) {
+      var on = current && current.id === id;
+      links[id].classList.toggle("active", !!on);
+      if (on) { links[id].setAttribute("aria-current", "location"); } else { links[id].removeAttribute("aria-current"); }
+    });
+  }
+  window.addEventListener("scroll", function () {
+    if (!ticking) { ticking = true; window.requestAnimationFrame(update); }
+  }, { passive: true });
+  window.addEventListener("resize", update);
+  update();
+})();
+</script>
+</body>
+</html>
